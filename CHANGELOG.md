@@ -1,0 +1,9 @@
+## Unreleased
+
+- Use validated integer types from `validated_numbers` and continue exporting them from the existing library entry point.
+
+## 0.1.0
+
+- Add exact decimal arithmetic with explicit scale and rounding for division.
+- Add percentages with percent and ratio constructors, percentage addition and subtraction, and multiplication by decimals.
+- Add positive and non-negative integer types, along with integer conversion extensions.
