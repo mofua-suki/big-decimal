@@ -1,7 +1,6 @@
 name: explicit_decimal
 description: Exact decimal arithmetic with explicit rounding, percentages, and validated integer types.
 version: 0.1.0
-publish_to: none
 repository: https://github.com/mofua-suki/big-decimal
 topics:
   - arithmetic
@@ -15,10 +14,7 @@ environment:
 dependencies:
   decimal: ^3.2.6
   meta: ^1.19.0
-  validated_numbers:
-    git:
-      url: git@github.com:mofua-suki/validated-numbers.git
-      ref: b2d2bff18964b82e03eac03fbdc244aaff4f7050
+  validated_numbers: ^0.1.0
 
 dev_dependencies:
   test: ^1.32.0
