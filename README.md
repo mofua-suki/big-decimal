@@ -41,7 +41,7 @@ void main() {
 
 - Pass a string such as `'19.95'`, `'-.5'`, or `'1.2e3'`, or call `toBigDecimal()` on an `int`. Pass the original decimal text to preserve precision. A `double` may have already lost precision before it is converted to text.
 - The parser accepts an optional sign, a decimal point written as `.`, and an optional `e` or `E` exponent. At least one digit is required in the mantissa. Surrounding whitespace, grouping separators, `NaN`, and infinity are rejected with `FormatException`.
-- Addition, subtraction, multiplication, and `abs()` keep the exact numeric result. Division requires a non-negative `scale` and a `roundingMode`. A zero divisor, including `'0.00'`, throws `InvalidValueException`.
+- Addition, subtraction, multiplication, and `abs()` keep the exact numeric result. Division requires a non-negative `scale` and a `roundingMode`. A zero divisor, including `'0.00'`, throws `InvalidValueException` with `Decimal.zero` (type `Decimal`) in `invalidValue`. This check takes precedence over scale validation. Both `divide()` and `setScale()` throw `InvalidZeroOrPositiveIntException` for a negative scale passed via `dynamic`.
 
 | Expression | Result |
 | --- | --- |

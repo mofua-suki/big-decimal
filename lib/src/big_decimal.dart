@@ -1,6 +1,6 @@
 import "package:decimal/decimal.dart";
 import "package:meta/meta.dart";
-import "package:validated_numbers/validated_numbers.dart" show InvalidValueException, ZeroOrPositiveInt;
+import "package:validated_numbers/validated_numbers.dart" show InvalidValueException, InvalidZeroOrPositiveIntException, ZeroOrPositiveInt;
 
 part "scaled_integer.dart";
 
@@ -91,6 +91,8 @@ extension type const BigDecimal._(_ScaledInteger _number) implements DecimalFact
   /// zeros. To display exactly [scale] fractional digits, apply [setScale] to
   /// the result using the same scale. Throws [InvalidValueException] if
   /// [divisor] is numerically zero, including a divisor parsed from `"0.00"`.
+  /// Its `invalidValue` is [Decimal.zero] of type [Decimal]. This check takes
+  /// precedence over a negative [scale], which throws [InvalidZeroOrPositiveIntException].
   BigDecimal divide(
     BigDecimal divisor, {
     required ZeroOrPositiveInt scale,
@@ -100,7 +102,7 @@ extension type const BigDecimal._(_ScaledInteger _number) implements DecimalFact
       // Preserve the public exception's value type from the previous implementation.
       throw InvalidValueException(invalidValue: Decimal.zero, message: "divisor must not be zero");
     }
-    return BigDecimal._(_number.divide(divisor._number, scale, roundingMode));
+    return BigDecimal._(_number.divide(divisor._number, ZeroOrPositiveInt(scale), roundingMode));
   }
 
   /// Returns the absolute value using the usual display format.
@@ -112,8 +114,9 @@ extension type const BigDecimal._(_ScaledInteger _number) implements DecimalFact
   /// When the value already fits at [scale], it is numerically unchanged.
   /// For example, requesting two digits for `1.2` displays `1.20` in both
   /// [value] and [toString]. Padding affects display only. Arithmetic
-  /// results use the usual display format again.
-  BigDecimal setScale(ZeroOrPositiveInt scale, RoundingMode roundingMode) => BigDecimal._(_number.rescale(scale, roundingMode));
+  /// results use the usual display format again. A negative [scale] throws
+  /// [InvalidZeroOrPositiveIntException].
+  BigDecimal setScale(ZeroOrPositiveInt scale, RoundingMode roundingMode) => BigDecimal._(_number.rescale(ZeroOrPositiveInt(scale), roundingMode));
 
   /// The value in plain decimal notation.
   ///
