@@ -10,16 +10,31 @@ final class _ScaledInteger._(this.coefficient, this.scale, [this.displayScale]) 
   static final _five = BigInt.from(5);
   static final _literal = RegExp(r'^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$');
 
-  factory _ScaledInteger(BigInt coefficient, int scale) {
+  // JavaScript numbers have 53 bits of integer precision. Native ints are signed 64-bit.
+  static final _maxScale = (BigInt.one << (identical(1, 1.0) ? 53 : 63)) - BigInt.one;
+  static final _minScale = identical(1, 1.0) ? -_maxScale : -_maxScale - BigInt.one;
+
+  static int _checkedScale(BigInt value) {
+    if (value < _minScale || value > _maxScale) {
+      throw RangeError("Decimal scale or digit count is outside the supported integer range: $value");
+    }
+    return value.toInt();
+  }
+
+  static int _difference(int a, int b) => _checkedScale(BigInt.from(a) - BigInt.from(b));
+
+  factory _ScaledInteger(BigInt coefficient, int scale) => _ScaledInteger._normalize(coefficient, BigInt.from(scale));
+
+  factory _ScaledInteger._normalize(BigInt coefficient, BigInt scale) {
     if (coefficient == BigInt.zero) return _ScaledInteger._(BigInt.zero, 0);
-    if (coefficient.remainder(_ten) != BigInt.zero) return _ScaledInteger._(coefficient, scale);
+    if (coefficient.remainder(_ten) != BigInt.zero) return _ScaledInteger._(coefficient, _checkedScale(scale));
 
     final digits = coefficient.toString();
     var end = digits.length;
     while (digits.codeUnitAt(end - 1) == 0x30) {
       end--;
     }
-    return _ScaledInteger._(BigInt.parse(digits.substring(0, end)), scale - (digits.length - end));
+    return _ScaledInteger._(BigInt.parse(digits.substring(0, end)), _checkedScale(scale - BigInt.from(digits.length - end)));
   }
 
   factory _ScaledInteger.parse(String text) {
@@ -29,13 +44,15 @@ final class _ScaledInteger._(this.coefficient, this.scale, [this.displayScale]) 
     final fraction = parts[3] ?? "";
     final coefficient = BigInt.parse("${parts[1]}${parts[2]}$fraction");
     final exponentText = parts[4];
-    final exponent = exponentText == null ? 0 : int.parse(exponentText);
-    return _ScaledInteger(coefficient, fraction.length - exponent);
+    final exponent = exponentText == null ? BigInt.zero : BigInt.parse(exponentText);
+    final scale = BigInt.from(fraction.length) - exponent;
+    if (coefficient == BigInt.zero) _checkedScale(scale);
+    return _ScaledInteger._normalize(coefficient, scale);
   }
 
-  _ScaledInteger shift(int places) => _ScaledInteger(coefficient, scale - places);
+  _ScaledInteger shift(int places) => _ScaledInteger(coefficient, _difference(scale, places));
 
-  BigInt _coefficientAt(int targetScale) => coefficient == BigInt.zero ? coefficient : coefficient * _ten.pow(targetScale - scale);
+  BigInt _coefficientAt(int targetScale) => coefficient == BigInt.zero ? coefficient : coefficient * _ten.pow(_difference(targetScale, scale));
 
   int compareTo(_ScaledInteger other) {
     final commonScale = scale > other.scale ? scale : other.scale;
@@ -50,27 +67,28 @@ final class _ScaledInteger._(this.coefficient, this.scale, [this.displayScale]) 
 
   _ScaledInteger subtract(_ScaledInteger other) => add(_ScaledInteger._(-other.coefficient, other.scale));
 
-  _ScaledInteger multiply(_ScaledInteger other) => _ScaledInteger(coefficient * other.coefficient, scale + other.scale);
+  _ScaledInteger multiply(_ScaledInteger other) => _ScaledInteger._normalize(coefficient * other.coefficient, BigInt.from(scale) + BigInt.from(other.scale));
 
   _ScaledInteger divide(_ScaledInteger divisor, int targetScale, RoundingMode mode) {
+    _checkedScale(BigInt.from(targetScale));
     if (coefficient == BigInt.zero) return _ScaledInteger._(BigInt.zero, 0);
 
     final commonFactor = coefficient.gcd(divisor.coefficient);
     final numerator = coefficient ~/ commonFactor;
     final denominator = divisor.coefficient ~/ commonFactor;
-    final scaleDifference = scale - divisor.scale;
+    final scaleDifference = BigInt.from(scale) - BigInt.from(divisor.scale);
     final exact = _exactQuotient(numerator, denominator, scaleDifference, targetScale);
     if (exact != null) return exact;
 
-    final adjustment = targetScale - scaleDifference;
-    final scaledNumerator = adjustment >= 0 ? numerator * _ten.pow(adjustment) : numerator;
-    final scaledDenominator = adjustment < 0 ? denominator * _ten.pow(-adjustment) : denominator;
+    final adjustment = BigInt.from(targetScale) - scaleDifference;
+    final scaledNumerator = !adjustment.isNegative ? numerator * _ten.pow(_checkedScale(adjustment)) : numerator;
+    final scaledDenominator = adjustment.isNegative ? denominator * _ten.pow(_checkedScale(-adjustment)) : denominator;
     return _ScaledInteger(_roundQuotient(scaledNumerator, scaledDenominator, mode), targetScale);
   }
 
   // A reduced fraction terminates in base ten only if its denominator has
   // no prime factors other than 2 and 5. Use its exact scale when it fits.
-  static _ScaledInteger? _exactQuotient(BigInt numerator, BigInt denominator, int scaleDifference, int targetScale) {
+  static _ScaledInteger? _exactQuotient(BigInt numerator, BigInt denominator, BigInt scaleDifference, int targetScale) {
     var remaining = denominator.abs();
     final twos = (remaining & -remaining).bitLength - 1;
     remaining >>= twos;
@@ -83,17 +101,18 @@ final class _ScaledInteger._(this.coefficient, this.scale, [this.displayScale]) 
     if (remaining != BigInt.one) return null;
 
     final digits = twos > fives ? twos : fives;
-    final exactScale = scaleDifference + digits;
-    if (exactScale > targetScale) return null;
+    final exactScale = scaleDifference + BigInt.from(digits);
+    if (exactScale > BigInt.from(targetScale)) return null;
 
     final exact = (denominator.isNegative ? -numerator : numerator) * BigInt.two.pow(digits - twos) * _five.pow(digits - fives);
-    return _ScaledInteger(exact, exactScale);
+    return _ScaledInteger._normalize(exact, exactScale);
   }
 
   _ScaledInteger rescale(int targetScale, RoundingMode mode) {
+    _checkedScale(BigInt.from(targetScale));
     if (targetScale >= scale) return _ScaledInteger._(coefficient, scale, targetScale);
 
-    final unit = _ten.pow(scale - targetScale);
+    final unit = _ten.pow(_difference(scale, targetScale));
     final rounded = _ScaledInteger(_roundQuotient(coefficient, unit, mode), targetScale);
     return _ScaledInteger._(rounded.coefficient, rounded.scale, targetScale);
   }
@@ -130,11 +149,12 @@ final class _ScaledInteger._(this.coefficient, this.scale, [this.displayScale]) 
   @override
   String toString() {
     final fractionalDigits = displayScale ?? (scale > 0 ? scale : 0);
-    final digits = coefficient.abs().toString() + "0" * (fractionalDigits - scale);
+    final width = fractionalDigits == 0 ? 0 : _checkedScale(BigInt.from(fractionalDigits) + BigInt.one);
+    final digits = coefficient.abs().toString() + "0" * _difference(fractionalDigits, scale);
     final sign = coefficient.isNegative ? "-" : "";
     if (fractionalDigits == 0) return "$sign$digits";
 
-    final padded = digits.padLeft(fractionalDigits + 1, "0");
+    final padded = digits.padLeft(width, "0");
     final point = padded.length - fractionalDigits;
     return "$sign${padded.substring(0, point)}.${padded.substring(point)}";
   }

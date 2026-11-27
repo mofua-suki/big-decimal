@@ -13,6 +13,28 @@ void main() {
   });
 
   group("[UnitTest] BigDecimal", () {
+    test("スケールの上下限では値を保持し、積が範囲を超えると例外になる", () {
+      final max = identical(1, 1.0) ? "9007199254740991" : "9223372036854775807";
+      final tiny = BigDecimal("1e-$max");
+      final large = BigDecimal("1e$max");
+
+      expect((tiny * large) == BigDecimal("1"), isTrue);
+      expect((BigDecimal("2e-$max") * BigDecimal("0.5")) == tiny, isTrue);
+      expect(() => tiny * tiny, throwsRangeError);
+      expect(() => large * large, throwsRangeError);
+      expect(() => Percentage.fromPercent("1e-$max"), throwsRangeError);
+      expect(() => BigDecimal("0.1e-$max"), throwsRangeError);
+      expect(() => BigDecimal("100e$max"), throwsRangeError);
+    });
+
+    test("除算のスケール差を正確に計算する", () {
+      final max = identical(1, 1.0) ? "9007199254740991" : "9223372036854775807";
+      final tiny = BigDecimal("1e-$max");
+      final large = BigDecimal("1e$max");
+      expect(() => large.divide(tiny, scale: ZeroOrPositiveInt(0), roundingMode: RoundingMode.down), throwsRangeError);
+      expect(tiny.divide(tiny, scale: ZeroOrPositiveInt(0), roundingMode: RoundingMode.down).value, "1");
+    });
+
     test("[Positive] 符号付きの指数表記を正確にパースして通常の十進表記で表示する", () {
       expect(BigDecimal("+.01200e+4").value, "120");
       expect(BigDecimal("-12.e-4").value, "-0.0012");

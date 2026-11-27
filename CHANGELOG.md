@@ -1,3 +1,7 @@
+## 0.1.2
+
+- Check decimal scales and digit counts before converting to platform integers. Out-of-range operations throw `RangeError`.
+
 ## 0.1.1
 
 - Use validated integer types from `validated_numbers` and continue exporting them from the existing library entry point.
