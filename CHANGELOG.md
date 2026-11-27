@@ -1,6 +1,7 @@
-## Unreleased
+## 0.1.1
 
 - Use validated integer types from `validated_numbers` and continue exporting them from the existing library entry point.
+- Add a Japanese README and link both language editions to pub.dev.
 
 ## 0.1.0
 
