@@ -51,6 +51,8 @@ void main() {
 | `BigDecimal('-2.50').abs().value` | `'2.5'` |
 | `BigDecimal('1.20') == BigDecimal('1.2')` | `true` |
 
+Decimal scales and derived digit counts must fit a signed 64-bit integer on the VM, or the safe integer range (−(2⁵³−1) through 2⁵³−1) on JavaScript targets. For example, multiplying two values whose scales are both at the upper limit throws `RangeError`.
+
 ## Scale, display, and equality
 
 `scale` is the number of fractional digits. `divide()` rounds the number to **at most** that many digits. `setScale()` rounds the number and displays **exactly** that many digits. It returns a new value. For example:
