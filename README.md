@@ -1,11 +1,12 @@
 # Big Decimal
 
+[日本語](https://github.com/mofua-suki/big-decimal/blob/main/README.ja.md) · [pub.dev](https://pub.dev/packages/explicit_decimal)
+
 Exact base-10 arithmetic for Dart and Flutter. Use `BigDecimal` for decimal values, `Percentage` for rates, and `PositiveInt` or `ZeroOrPositiveInt` for integer inputs with a minimum value.
 
-## Install
+## Installation
 
-The package name is `explicit_decimal`. It requires Dart 3.14 or newer,
-below Dart 4.
+Requires Dart SDK 3.14.0 or later, below 4.0.0.
 
 ```sh
 dart pub add explicit_decimal
@@ -102,6 +103,12 @@ Use a constructor or the `toPositiveInt()` and `toZeroOrPositiveInt()` extension
 
 ## Development
 
-- `dart analyze` checks the package.
-- `dart test` runs the tests.
-- `dart doc` generates the API documentation.
+Run these commands from the repository root.
+
+```sh
+dart pub get
+dart analyze
+dart test
+```
+
+Run the example with `dart run example/explicit_decimal_example.dart`. Generate the API reference with `dart doc`.
