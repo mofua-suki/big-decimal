@@ -1,3 +1,4 @@
+import "package:decimal/decimal.dart";
 import "package:explicit_decimal/explicit_decimal.dart";
 import "package:test/test.dart";
 
@@ -82,6 +83,15 @@ void main() {
       expect(larger > amount, isTrue);
     });
 
+    test("[Positive] ゼロと異符号の値を両方向で比較する", () {
+      final values = [BigDecimal("-2e2"), BigDecimal.zero, BigDecimal("3e-2")];
+      for (var i = 0; i < values.length; i++) {
+        for (var j = 0; j < values.length; j++) {
+          expect(values[i].compareTo(values[j]).sign, i.compareTo(j));
+        }
+      }
+    });
+
     test("[Positive] 表示桁数は等値比較とハッシュに影響しない", () {
       final amount = BigDecimal("1.2");
       final padded = amount.setScale(ZeroOrPositiveInt(2), .halfEven);
@@ -99,6 +109,27 @@ void main() {
       expect((amount * half).value, "-0.6");
       expect(amount.divide(half, scale: ZeroOrPositiveInt(3), roundingMode: .halfEven).value, "-2.4");
       expect(amount.abs().value, "1.2");
+    });
+  });
+
+  group("[UnitTest] dynamic scale", () {
+    final dynamic negativeScale = -1;
+    final dynamic zeroScale = 0;
+    final one = 1.toBigDecimal();
+
+    test("divide と setScale は負の桁数を拒否し、境界のゼロを受け付ける", () {
+      final invalidScale = throwsA(isA<InvalidZeroOrPositiveIntException>().having((error) => error.invalidValue, "invalidValue", -1));
+      expect(() => BigDecimal.zero.divide(one, scale: negativeScale, roundingMode: .down), invalidScale);
+      expect(() => one.setScale(negativeScale, .down), invalidScale);
+      expect(one.divide(one, scale: zeroScale, roundingMode: .down).value, "1");
+      expect(one.setScale(zeroScale, .down).value, "1");
+    });
+
+    test("除数がゼロなら負の桁数より優先して Decimal のゼロを報告する", () {
+      expect(
+        () => one.divide(BigDecimal("0.00"), scale: negativeScale, roundingMode: .down),
+        throwsA(isA<InvalidValueException<Decimal>>().having((error) => error.invalidValue, "invalidValue", Decimal.zero)),
+      );
     });
   });
 

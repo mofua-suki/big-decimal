@@ -55,6 +55,10 @@ final class _ScaledInteger._(this.coefficient, this.scale, [this.displayScale]) 
   BigInt _coefficientAt(int targetScale) => coefficient == BigInt.zero ? coefficient : coefficient * _ten.pow(_difference(targetScale, scale));
 
   int compareTo(_ScaledInteger other) {
+    final sign = coefficient.sign;
+    final otherSign = other.coefficient.sign;
+    if (sign != otherSign || sign == 0) return sign.compareTo(otherSign);
+
     final commonScale = scale > other.scale ? scale : other.scale;
     return _coefficientAt(commonScale).compareTo(other._coefficientAt(commonScale));
   }

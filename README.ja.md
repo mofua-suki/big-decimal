@@ -41,7 +41,7 @@ void main() {
 
 - `'19.95'`、`'-.5'`、`'1.2e3'` のような文字列を渡すか、`int` の `toBigDecimal()` を呼びます。精度を保つには元の十進表記を渡してください。`double` を経由すると、文字列に変換する前に精度が失われることがあります。
 - 符号、小数点 `.`、`e` または `E` に続く指数を指定できます。仮数部には少なくとも1桁の数字が必要です。前後の空白、桁区切り、`NaN`、無限大は `FormatException` になります。
-- 加算・減算・乗算・`abs()` は正確な値を返します。除算には非負の `scale` と `roundingMode` を指定します。除数が `'0.00'` など数値としてゼロなら `InvalidValueException` が発生します。
+- 加算・減算・乗算・`abs()` は正確な値を返します。除算には非負の `scale` と `roundingMode` を指定します。除数が `'0.00'` など数値としてゼロなら、`invalidValue` に `Decimal` 型の `Decimal.zero` を格納した `InvalidValueException` が発生します。この判定は桁数の検証に優先します。`divide()` と `setScale()` は、`dynamic` 経由で負の桁数を渡すと `InvalidZeroOrPositiveIntException` を投げます。
 
 | 式 | 結果 |
 | --- | --- |
